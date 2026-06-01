@@ -1,0 +1,12 @@
+# Personal tracker variants (keep your real data out of git)
+*-personal.html
+
+# macOS
+.DS_Store
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/

@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Master Request Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b0c12;--surface:#15161e;--surface-2:#1b1d27;--code-bg:#0f1018;--border:#282a37;--border-soft:#21232f;
+  --violet:#8b5cf6;--violet-soft:#a78bfa;--green:#10b981;--green-bright:#34d399;--blue:#3b82f6;--blue-soft:#60a5fa;
+  --amber:#f59e0b;--amber-soft:#fbbf24;--rose:#f43f5e;--rose-soft:#fb7185;
+  --teal:#14b8a6;--teal-soft:#2dd4bf;
+  --text:#e5e7eb;--text-bright:#f9fafb;--text-soft:#9ca3af;--text-faint:#6b7280;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',sans-serif;line-height:1.6;padding:0 0 60px}
+.wrap{max-width:1260px;margin:0 auto;padding:0 18px}
+
+.topbar{background:linear-gradient(180deg,#13141d,#0d0e15);border-bottom:1px solid var(--border);padding:26px 0 0;margin-bottom:22px}
+h1{font-size:clamp(22px,4.5vw,30px);font-weight:700;color:var(--text-bright)}
+h1 span.ai{color:var(--violet)}
+.byline{color:var(--text-soft);font-size:13.5px;margin-top:5px}
+.topbar-bar{height:8px;background:var(--surface-2);border-radius:999px;overflow:hidden;margin:16px 0 0}
+.topbar-fill{height:100%;width:0;background:linear-gradient(90deg,var(--violet),var(--blue) 55%,var(--green));border-radius:999px;transition:width .55s cubic-bezier(.4,0,.2,1)}
+.topbar-meta{display:flex;justify-content:space-between;padding:10px 0 18px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text-faint)}
+.topbar-meta b{color:var(--green-bright)}
+
+/* Stats Row */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:10px;margin-bottom:18px}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 10px;text-align:center}
+.stat-num{font-size:26px;font-weight:700;font-family:'IBM Plex Mono',monospace;line-height:1}
+.stat-num.total{color:var(--violet-soft)}
+.stat-num.confirmed{color:var(--green-bright)}
+.stat-num.delivered{color:var(--teal-soft)}
+.stat-num.open{color:var(--blue-soft)}
+.stat-num.blocked{color:var(--rose-soft)}
+.stat-num.waiting{color:var(--amber-soft)}
+.stat-label{font-size:10px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.1em;margin-top:5px;font-family:'IBM Plex Mono',monospace}
+
+/* KPI Section */
+.kpi-section{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px}
+@media(max-width:640px){.kpi-section{grid-template-columns:1fr}}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px}
+.kpi-card h3{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px;font-weight:600}
+.kpi-row{display:flex;justify-content:space-between;padding:5px 0;font-size:13px;border-bottom:1px solid var(--border-soft)}
+.kpi-row:last-child{border-bottom:none}
+.kpi-row .kpi-label{color:var(--text-soft)}
+.kpi-row .kpi-val{font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--text-bright)}
+.kpi-row .kpi-val.warn{color:var(--amber-soft)}
+.kpi-row .kpi-val.danger{color:var(--rose-soft)}
+.kpi-row .kpi-val.good{color:var(--green-bright)}
+
+/* Channel bar chart */
+.channel-bar-wrap{display:flex;gap:8px;align-items:center;margin-top:6px;margin-bottom:6px}
+.channel-bar-label{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-soft);min-width:70px;text-align:right}
+.channel-bar{height:22px;border-radius:4px;transition:width .4s ease;min-width:2px}
+.channel-bar-count{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-faint);margin-left:6px}
+.channel-chat{background:var(--blue)}
+.channel-dispatch{background:var(--violet)}
+.channel-code{background:var(--green)}
+.channel-cowork{background:var(--amber)}
+.channel-other{background:var(--text-faint)}
+
+/* Stall alerts */
+.stall-list{max-height:120px;overflow-y:auto}
+.stall-item{font-size:12px;padding:4px 0;color:var(--text-soft);border-bottom:1px solid var(--border-soft)}
+.stall-item:last-child{border-bottom:none}
+.stall-item b{color:var(--rose-soft);font-weight:600}
+.stall-none{font-size:12px;color:var(--green-bright)}
+
+/* Controls */
+.controls{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;align-items:center}
+.search-box{flex:1;min-width:180px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-size:14px;outline:none;transition:border-color .2s}
+.search-box:focus{border-color:var(--violet)}
+.search-box::placeholder{color:var(--text-faint)}
+.filter-btn{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px 12px;color:var(--text-soft);font-family:'IBM Plex Mono',monospace;font-size:10px;cursor:pointer;transition:all .2s;text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+.filter-btn:hover,.filter-btn.active{border-color:var(--violet);color:var(--violet-soft);background:rgba(139,92,246,.1)}
+.filter-btn.s-confirmed.active{border-color:var(--green);color:var(--green-bright);background:rgba(16,185,129,.1)}
+.filter-btn.s-delivered.active{border-color:var(--teal);color:var(--teal-soft);background:rgba(20,184,166,.1)}
+.filter-btn.s-open.active{border-color:var(--blue);color:var(--blue-soft);background:rgba(59,130,246,.1)}
+.filter-btn.s-blocked.active{border-color:var(--rose);color:var(--rose-soft);background:rgba(244,63,94,.1)}
+.filter-btn.s-waiting.active{border-color:var(--amber);color:var(--amber-soft);background:rgba(245,158,11,.1)}
+.filter-btn.s-progress.active{border-color:var(--violet);color:var(--violet-soft);background:rgba(139,92,246,.1)}
+.export-btn{background:linear-gradient(90deg,var(--violet),var(--blue));border:none;border-radius:8px;padding:7px 14px;color:#fff;font-family:'IBM Plex Mono',monospace;font-size:10px;cursor:pointer;font-weight:600;text-transform:uppercase;letter-spacing:.05em;transition:opacity .2s}
+.export-btn:hover{opacity:.85}
+
+.cat-filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.cat-btn{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:5px 10px;color:var(--text-soft);font-family:'IBM Plex Mono',monospace;font-size:10px;cursor:pointer;transition:all .2s;text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+.cat-btn:hover,.cat-btn.active{color:var(--text-bright);background:var(--surface-2)}
+
+/* Table */
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+table{width:100%;border-collapse:collapse}
+thead th{background:var(--surface-2);padding:10px 8px;text-align:left;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.08em;border-bottom:2px solid transparent;border-image:linear-gradient(90deg,var(--violet),var(--blue) 55%,var(--green)) 1;font-weight:600;white-space:nowrap;cursor:pointer;user-select:none}
+thead th:hover{color:var(--text-soft)}
+tbody tr{border-bottom:1px solid var(--border-soft);transition:background .15s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:rgba(139,92,246,.04)}
+tbody td{padding:9px 8px;font-size:12.5px;vertical-align:top}
+td.id-cell{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-faint);width:30px;text-align:center}
+td.request-cell{color:var(--text-bright);font-weight:500;max-width:220px}
+td.cat-cell .cat-tag{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:9px;padding:3px 7px;border-radius:5px;font-weight:600;letter-spacing:.05em;white-space:nowrap}
+.cat-career{background:rgba(59,130,246,.15);color:var(--blue-soft)}
+.cat-learning{background:rgba(245,158,11,.15);color:var(--amber-soft)}
+.cat-writing{background:rgba(139,92,246,.15);color:var(--violet-soft)}
+.cat-product{background:rgba(244,63,94,.15);color:var(--rose-soft)}
+.cat-productivity{background:rgba(16,185,129,.15);color:var(--green-bright)}
+.cat-portfolio{background:rgba(96,165,250,.15);color:#93c5fd}
+.cat-tools{background:rgba(167,139,250,.15);color:#c4b5fd}
+
+td.status-cell .status-badge{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:9px;padding:3px 7px;border-radius:5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+.s-confirmed{background:rgba(16,185,129,.18);color:var(--green-bright)}
+.s-delivered{background:rgba(20,184,166,.18);color:var(--teal-soft)}
+.s-open{background:rgba(59,130,246,.18);color:var(--blue-soft)}
+.s-blocked{background:rgba(244,63,94,.15);color:var(--rose-soft)}
+.s-waiting{background:rgba(245,158,11,.15);color:var(--amber-soft)}
+.s-progress{background:rgba(139,92,246,.18);color:var(--violet-soft)}
+
+.age-badge{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:2px 6px;border-radius:4px;font-weight:600}
+.age-fresh{background:rgba(16,185,129,.12);color:var(--green-bright)}
+.age-warm{background:rgba(245,158,11,.15);color:var(--amber-soft)}
+.age-stale{background:rgba(244,63,94,.15);color:var(--rose-soft)}
+.age-closed{color:var(--text-faint);background:none;font-weight:400}
+
+/* Channel badge */
+.ch-badge{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:9px;padding:2px 7px;border-radius:4px;font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+.ch-chat{background:rgba(59,130,246,.15);color:var(--blue-soft)}
+.ch-dispatch{background:rgba(139,92,246,.15);color:var(--violet-soft)}
+.ch-code{background:rgba(16,185,129,.15);color:var(--green-bright)}
+.ch-cowork{background:rgba(245,158,11,.15);color:var(--amber-soft)}
+.ch-other{background:rgba(107,114,128,.15);color:var(--text-faint)}
+
+td.date-cell{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-faint);white-space:nowrap}
+td.artifact-cell{font-size:11px;max-width:180px;word-break:break-all}
+td.artifact-cell a{color:var(--violet-soft);text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:10px}
+td.artifact-cell a:hover{text-decoration:underline}
+td.notes-cell{font-size:12px;color:var(--text-soft);min-width:90px}
+td.notes-cell .note-input{background:transparent;border:1px solid transparent;color:var(--text-soft);font-family:'IBM Plex Sans',sans-serif;font-size:12px;width:100%;padding:3px 5px;border-radius:6px;resize:none;outline:none;transition:border-color .2s;min-height:26px}
+td.notes-cell .note-input:focus{border-color:var(--violet);background:var(--code-bg)}
+
+td.action-cell{text-align:center;white-space:nowrap}
+.confirm-btn{background:linear-gradient(90deg,var(--teal),var(--green));border:none;border-radius:6px;padding:4px 10px;color:#fff;font-family:'IBM Plex Mono',monospace;font-size:9px;cursor:pointer;font-weight:700;text-transform:uppercase;letter-spacing:.05em;transition:opacity .2s}
+.confirm-btn:hover{opacity:.85}
+.confirmed-info{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--green-bright)}
+.confirmed-info .conf-date{display:block;color:var(--text-faint);margin-top:1px}
+
+td.final-loc{font-size:11px;max-width:160px;word-break:break-all;color:var(--text-soft)}
+td.final-loc a{color:var(--violet-soft);text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:10px}
+td.final-loc a:hover{text-decoration:underline}
+
+/* Modal */
+.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);z-index:1000;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;max-width:520px;width:90%;max-height:90vh;overflow-y:auto}
+.modal h2{font-size:18px;color:var(--text-bright);margin-bottom:6px}
+.modal .modal-sub{font-size:13px;color:var(--text-soft);margin-bottom:20px}
+.modal label{display:block;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;margin-top:16px}
+.modal input,.modal textarea{width:100%;background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-size:14px;outline:none;transition:border-color .2s}
+.modal input:focus,.modal textarea:focus{border-color:var(--violet)}
+.modal textarea{resize:vertical;min-height:80px}
+.modal-actions{display:flex;gap:10px;margin-top:22px;justify-content:flex-end}
+.modal-cancel{background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:9px 18px;color:var(--text-soft);font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;font-weight:600}
+.modal-cancel:hover{color:var(--text)}
+.modal-save{background:linear-gradient(90deg,var(--teal),var(--green));border:none;border-radius:8px;padding:9px 18px;color:#fff;font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;font-weight:700}
+.modal-save:hover{opacity:.85}
+
+.no-results{text-align:center;padding:40px 20px;color:var(--text-faint);font-size:14px}
+
+@media(max-width:768px){
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{min-width:1200px}
+  .stats{grid-template-columns:repeat(3,1fr)}
+}
+footer{margin-top:30px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--text-faint)}
+footer a{color:var(--violet-soft);text-decoration:none}
+footer a:hover{text-decoration:underline}
+</style></head><body>
+
+<div class="topbar"><div class="wrap">
+  <!-- ============================================================
+       BRANDING — Edit the title, byline, and footer
+       ============================================================ -->
+  <h1>Master Request Tracker</h1>
+  <div class="byline">Your single source of truth — every request, every session, every artifact</div>
+  <div class="topbar-bar"><div class="topbar-fill" id="fill"></div></div>
+  <div class="topbar-meta"><span>Command Center</span><span><b id="pct">0%</b> · <span id="frac">0/0</span> confirmed</span></div>
+</div></div>
+
+<div class="wrap">
+
+<!-- Stats -->
+<div class="stats">
+  <div class="stat"><div class="stat-num total" id="s-total">0</div><div class="stat-label">Total</div></div>
+  <div class="stat"><div class="stat-num confirmed" id="s-confirmed">0</div><div class="stat-label">Confirmed</div></div>
+  <div class="stat"><div class="stat-num delivered" id="s-delivered">0</div><div class="stat-label">Delivered</div></div>
+  <div class="stat"><div class="stat-num open" id="s-open">0</div><div class="stat-label">Open</div></div>
+  <div class="stat"><div class="stat-num blocked" id="s-blocked">0</div><div class="stat-label">Blocked</div></div>
+  <div class="stat"><div class="stat-num waiting" id="s-waiting">0</div><div class="stat-label">Waiting</div></div>
+</div>
+
+<!-- KPI Dashboard -->
+<div class="kpi-section">
+  <div class="kpi-card">
+    <h3>Performance Metrics</h3>
+    <div id="kpiMetrics"></div>
+  </div>
+  <div class="kpi-card">
+    <h3>Build Channel Usage</h3>
+    <div id="kpiChannels"></div>
+  </div>
+  <div class="kpi-card">
+    <h3>Stalled Requests</h3>
+    <div class="stall-list" id="kpiStalls"></div>
+  </div>
+  <div class="kpi-card">
+    <h3>Status Breakdown by Channel</h3>
+    <div id="kpiChannelStatus"></div>
+  </div>
+</div>
+
+<!-- Controls -->
+<div class="controls">
+  <input type="text" class="search-box" id="search" placeholder="Search requests, categories, channels, notes...">
+  <button class="filter-btn s-confirmed" data-status="Confirmed">Confirmed</button>
+  <button class="filter-btn s-delivered" data-status="Delivered">Delivered</button>
+  <button class="filter-btn s-open" data-status="Open">Open</button>
+  <button class="filter-btn s-blocked" data-status="Blocked">Blocked</button>
+  <button class="filter-btn s-waiting" data-status="Waiting on Me">Waiting</button>
+  <button class="filter-btn s-progress" data-status="In Progress">In Progress</button>
+  <button class="export-btn" id="exportMd">Export .md</button>
+</div>
+
+<div class="cat-filters" id="catFilters"></div>
+
+<!-- Table -->
+<div class="table-wrap">
+<table>
+<thead><tr>
+  <th>#</th><th>Request</th><th>Category</th><th>Channel</th><th>Status</th><th>Age</th><th>Requested</th><th>Artifact</th><th>Notes</th><th>Action</th><th>Final Location</th>
+</tr></thead>
+<tbody id="tbody"></tbody>
+</table>
+<div class="no-results" id="noResults" style="display:none">No requests match your filters.</div>
+</div>
+
+<footer>Request Tracker · <a href="https://github.com/grAIce-studios/request-tracker" target="_blank">GitHub</a> · MIT License</footer>
+</div>
+
+<!-- Confirm Modal -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal">
+    <h2 id="modalTitle">Confirm Request</h2>
+    <div class="modal-sub" id="modalSub"></div>
+    <label>Date Completed</label>
+    <input type="date" id="modalDate">
+    <label>Final Location (file path, URL, or description)</label>
+    <input type="text" id="modalLocation" placeholder="e.g. ~/projects/output.pdf or https://...">
+    <label>Your Comments</label>
+    <textarea id="modalComments" placeholder="What did you think? Any follow-ups needed?"></textarea>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="modalCancel">Cancel</button>
+      <button class="modal-save" id="modalSave">Confirm Complete</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ================================================================
+//  ✏️ YOUR DATA
+//
+//  STATUS FLOW:
+//    Open → In Progress → Delivered (AI finished) → Confirmed (you verified)
+//
+//  CHANNEL — Where this was built:
+//    "Chat"     = claude.ai web chat
+//    "Dispatch" = Claude dispatch / mobile
+//    "Code"     = Claude Code (CLI)
+//    "Cowork"   = Cowork mode (desktop app)
+//    ""         = unknown / other
+// ================================================================
+const DATA = [
+  {id:1, request:"Set up CI/CD pipeline for main repo", category:"DevOps", channel:"Code", status:"Delivered", date:"2026-05-01", artifact:"~/.github/workflows/deploy.yml", notes:"GitHub Actions, auto-deploys to staging on push"},
+  {id:2, request:"Design new landing page mockup", category:"Design", channel:"Chat", status:"Open", date:"2026-05-10", artifact:"", notes:"Waiting on brand colors from marketing"},
+  {id:3, request:"Write API documentation for v2 endpoints", category:"Docs", channel:"Cowork", status:"In Progress", date:"2026-05-15", artifact:"~/projects/api-docs/v2.md", notes:"Auth and users sections done, billing WIP"},
+  {id:4, request:"Research competitor pricing models", category:"Research", channel:"Chat", status:"Delivered", date:"2026-05-08", artifact:"https://docs.google.com/spreadsheets/d/example", notes:"Compared 6 competitors across 3 tiers"},
+  {id:5, request:"Fix memory leak in background worker", category:"Engineering", channel:"Code", status:"Blocked", date:"2026-05-20", artifact:"", notes:"Needs access to production logs — waiting on DevOps"},
+];
+
+// ================================================================
+//  🎨 CATEGORY COLORS
+// ================================================================
+const CAT_COLORS = {
+  'DevOps': 'cat-career',
+  'Design': 'cat-writing',
+  'Docs': 'cat-learning',
+  'Research': 'cat-portfolio',
+  'Engineering': 'cat-product',
+};
+
+const STATUS_CLASS = {
+  'Confirmed':'s-confirmed','Delivered':'s-delivered','Open':'s-open',
+  'Blocked':'s-blocked','Waiting on Me':'s-waiting','In Progress':'s-progress'
+};
+
+const CHANNEL_CLASS = {'Chat':'ch-chat','Dispatch':'ch-dispatch','Code':'ch-code','Cowork':'ch-cowork'};
+const CHANNEL_BAR = {'Chat':'channel-chat','Dispatch':'channel-dispatch','Code':'channel-code','Cowork':'channel-cowork'};
+
+// ================================================================
+//  AGING / STALL THRESHOLDS (days)
+// ================================================================
+const AGE_WARN = 7;
+const AGE_STALE = 14;
+const STALL_DELIVERED = 14;  // days before a Delivered item is flagged stalled
+const STALL_OPEN = 21;       // days before an Open/In Progress item is flagged
+
+// ================================================================
+//  LOCALSTORAGE KEYS
+// ================================================================
+const STORAGE_KEY = 'request_tracker_notes';
+const CONFIRM_KEY = 'request_tracker_confirmations';
+
+let savedNotes = {};
+let confirmations = {};
+try { savedNotes = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch(e) {}
+try { confirmations = JSON.parse(localStorage.getItem(CONFIRM_KEY) || '{}'); } catch(e) {}
+
+function saveNotes() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(savedNotes)); } catch(e) {} }
+function saveConfirmations() { try { localStorage.setItem(CONFIRM_KEY, JSON.stringify(confirmations)); } catch(e) {} }
+
+function getStatus(d) { return confirmations[d.id] ? 'Confirmed' : d.status; }
+
+function daysSince(dateStr) {
+  if (!dateStr) return 0;
+  const normalized = dateStr.length === 7 ? dateStr + '-01' : dateStr;
+  const then = new Date(normalized);
+  if (isNaN(then)) return 0;
+  return Math.max(0, Math.floor((Date.now() - then) / 86400000));
+}
+
+function ageBadge(days, status) {
+  if (status === 'Confirmed') return `<span class="age-badge age-closed">${days}d</span>`;
+  let cls = 'age-fresh';
+  if (days >= AGE_STALE) cls = 'age-stale';
+  else if (days >= AGE_WARN) cls = 'age-warm';
+  return `<span class="age-badge ${cls}">${days}d</span>`;
+}
+
+// ---- KPI Calculations ----
+function calcKPIs() {
+  const now = Date.now();
+  let totalAge = 0, openCount = 0, confirmedAges = [], stalls = [];
+
+  DATA.forEach(d => {
+    const s = getStatus(d);
+    const days = daysSince(d.date);
+
+    if (s !== 'Confirmed') {
+      totalAge += days;
+      openCount++;
+    }
+    if (s === 'Confirmed' && confirmations[d.id]) {
+      const confDate = confirmations[d.id].dateCompleted;
+      if (confDate && d.date) {
+        const reqDate = new Date(d.date.length === 7 ? d.date + '-01' : d.date);
+        const cDate = new Date(confDate);
+        if (!isNaN(reqDate) && !isNaN(cDate)) confirmedAges.push(Math.max(0, Math.floor((cDate - reqDate) / 86400000)));
+      }
+    }
+    if (s === 'Delivered' && days >= STALL_DELIVERED) stalls.push({id:d.id, request:d.request, days, reason:'Delivered ' + days + 'd ago, not confirmed'});
+    if ((s === 'Open' || s === 'In Progress') && days >= STALL_OPEN) stalls.push({id:d.id, request:d.request, days, reason:s + ' for ' + days + 'd'});
+    if (s === 'Blocked') stalls.push({id:d.id, request:d.request, days, reason:'Blocked for ' + days + 'd'});
+  });
+
+  const avgOpen = openCount > 0 ? (totalAge / openCount).toFixed(1) : '0';
+  const avgToConfirm = confirmedAges.length > 0 ? (confirmedAges.reduce((a,b)=>a+b,0) / confirmedAges.length).toFixed(1) : '—';
+  const longestOpen = openCount > 0 ? Math.max(...DATA.filter(d => getStatus(d) !== 'Confirmed').map(d => daysSince(d.date))) : 0;
+
+  // Channel breakdown
+  const channels = {};
+  DATA.forEach(d => { const ch = d.channel || 'Other'; channels[ch] = (channels[ch]||0) + 1; });
+
+  // Channel × Status
+  const chStatus = {};
+  DATA.forEach(d => {
+    const ch = d.channel || 'Other';
+    const s = getStatus(d);
+    if (!chStatus[ch]) chStatus[ch] = {};
+    chStatus[ch][s] = (chStatus[ch][s]||0) + 1;
+  });
+
+  return {avgOpen, avgToConfirm, longestOpen, stalls, channels, chStatus, total: DATA.length};
+}
+
+function renderKPIs() {
+  const k = calcKPIs();
+
+  // Metrics
+  const warnClass = v => parseFloat(v) >= AGE_STALE ? 'danger' : parseFloat(v) >= AGE_WARN ? 'warn' : 'good';
+  document.getElementById('kpiMetrics').innerHTML = `
+    <div class="kpi-row"><span class="kpi-label">Avg days open (unconfirmed)</span><span class="kpi-val ${warnClass(k.avgOpen)}">${k.avgOpen}d</span></div>
+    <div class="kpi-row"><span class="kpi-label">Avg days to confirm</span><span class="kpi-val">${k.avgToConfirm === '—' ? '—' : k.avgToConfirm + 'd'}</span></div>
+    <div class="kpi-row"><span class="kpi-label">Longest open request</span><span class="kpi-val ${k.longestOpen >= AGE_STALE ? 'danger' : ''}">${k.longestOpen}d</span></div>
+    <div class="kpi-row"><span class="kpi-label">Confirmation rate</span><span class="kpi-val">${k.total > 0 ? Math.round(DATA.filter(d=>getStatus(d)==='Confirmed').length/k.total*100) : 0}%</span></div>
+  `;
+
+  // Channel bars
+  const maxCh = Math.max(...Object.values(k.channels), 1);
+  const chOrder = ['Chat','Dispatch','Code','Cowork','Other'];
+  let chHtml = '';
+  chOrder.forEach(ch => {
+    if (!k.channels[ch]) return;
+    const pct = Math.round(k.channels[ch] / maxCh * 100);
+    const barCls = CHANNEL_BAR[ch] || 'channel-other';
+    chHtml += `<div class="channel-bar-wrap"><span class="channel-bar-label">${ch}</span><div class="channel-bar ${barCls}" style="width:${pct}%"></div><span class="channel-bar-count">${k.channels[ch]}</span></div>`;
+  });
+  document.getElementById('kpiChannels').innerHTML = chHtml || '<span style="color:var(--text-faint);font-size:12px">No channel data</span>';
+
+  // Stalls
+  if (k.stalls.length === 0) {
+    document.getElementById('kpiStalls').innerHTML = '<div class="stall-none">No stalled requests</div>';
+  } else {
+    document.getElementById('kpiStalls').innerHTML = k.stalls.sort((a,b)=>b.days-a.days).map(s =>
+      `<div class="stall-item"><b>#${s.id}</b> ${s.request} — ${s.reason}</div>`
+    ).join('');
+  }
+
+  // Channel × Status
+  let csHtml = '';
+  chOrder.forEach(ch => {
+    if (!k.chStatus[ch]) return;
+    const parts = Object.entries(k.chStatus[ch]).map(([s,n]) => `<span class="status-badge ${STATUS_CLASS[s]||'s-open'}" style="font-size:9px;margin-right:4px">${s} ${n}</span>`).join('');
+    csHtml += `<div style="margin-bottom:6px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-soft);display:inline-block;min-width:70px">${ch}</span>${parts}</div>`;
+  });
+  document.getElementById('kpiChannelStatus').innerHTML = csHtml || '<span style="color:var(--text-faint);font-size:12px">No data</span>';
+}
+
+// ---- Category filters ----
+const categories = [...new Set(DATA.map(d => d.category))].sort();
+const catFiltersEl = document.getElementById('catFilters');
+const allBtn = document.createElement('button');
+allBtn.className = 'cat-btn active'; allBtn.textContent = 'All'; allBtn.dataset.cat = 'all';
+catFiltersEl.appendChild(allBtn);
+categories.forEach(c => { const btn = document.createElement('button'); btn.className='cat-btn'; btn.textContent=c; btn.dataset.cat=c; catFiltersEl.appendChild(btn); });
+
+let activeStatus = null, activeCategory = 'all', searchQuery = '';
+
+// ---- Render table ----
+function render() {
+  const tbody = document.getElementById('tbody');
+  const filtered = DATA.filter(d => {
+    const eff = getStatus(d);
+    if (activeStatus && eff !== activeStatus) return false;
+    if (activeCategory !== 'all' && d.category !== activeCategory) return false;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      const noteText = savedNotes[d.id] || d.notes || '';
+      const conf = confirmations[d.id] || {};
+      const searchable = (d.request+' '+d.category+' '+eff+' '+(d.channel||'')+' '+d.artifact+' '+noteText+' '+(conf.comments||'')+' '+(conf.finalLocation||'')).toLowerCase();
+      if (!searchable.includes(q)) return false;
+    }
+    return true;
+  });
+
+  if (!filtered.length) { tbody.innerHTML=''; document.getElementById('noResults').style.display='block'; return; }
+  document.getElementById('noResults').style.display='none';
+
+  tbody.innerHTML = filtered.map(d => {
+    const eff = getStatus(d);
+    const catClass = CAT_COLORS[d.category] || 'cat-tools';
+    const sClass = STATUS_CLASS[eff] || 's-open';
+    const chClass = CHANNEL_CLASS[d.channel] || 'ch-other';
+    const note = savedNotes[d.id] !== undefined ? savedNotes[d.id] : d.notes;
+    const days = daysSince(d.date);
+    const conf = confirmations[d.id];
+
+    let artifactHtml = d.artifact || '—';
+    if (d.artifact && d.artifact.startsWith('http')) artifactHtml = '<a href="'+d.artifact+'" target="_blank">'+d.artifact+'</a>';
+    else if (d.artifact && d.artifact.startsWith('~')) artifactHtml = '<a href="#">'+d.artifact+'</a>';
+
+    let actionHtml = '<span style="color:var(--text-faint);font-size:10px">—</span>';
+    if (eff === 'Delivered') actionHtml = `<button class="confirm-btn" data-id="${d.id}">Confirm</button>`;
+    else if (eff === 'Confirmed' && conf) actionHtml = `<span class="confirmed-info">Confirmed<span class="conf-date">${conf.dateCompleted||''}</span></span>`;
+
+    let finalLocHtml = '—';
+    if (conf && conf.finalLocation) {
+      finalLocHtml = conf.finalLocation.startsWith('http') ? '<a href="'+conf.finalLocation+'" target="_blank">'+conf.finalLocation+'</a>' : conf.finalLocation;
+    }
+
+    return `<tr>
+      <td class="id-cell">${d.id}</td>
+      <td class="request-cell">${d.request}${conf&&conf.comments?'<br><span style="font-size:10px;color:var(--text-faint);font-style:italic">'+conf.comments+'</span>':''}</td>
+      <td class="cat-cell"><span class="cat-tag ${catClass}">${d.category}</span></td>
+      <td><span class="ch-badge ${chClass}">${d.channel||'—'}</span></td>
+      <td class="status-cell"><span class="status-badge ${sClass}">${eff}</span></td>
+      <td style="text-align:center">${ageBadge(days,eff)}</td>
+      <td class="date-cell">${d.date}</td>
+      <td class="artifact-cell">${artifactHtml}</td>
+      <td class="notes-cell"><textarea class="note-input" data-id="${d.id}" rows="1">${note}</textarea></td>
+      <td class="action-cell">${actionHtml}</td>
+      <td class="final-loc">${finalLocHtml}</td>
+    </tr>`;
+  }).join('');
+
+  tbody.querySelectorAll('.note-input').forEach(el => {
+    el.addEventListener('input', () => { savedNotes[el.dataset.id]=el.value; saveNotes(); });
+    el.style.height='auto'; el.style.height=el.scrollHeight+'px';
+    el.addEventListener('input', function(){ this.style.height='auto'; this.style.height=this.scrollHeight+'px'; });
+  });
+  tbody.querySelectorAll('.confirm-btn').forEach(btn => {
+    btn.addEventListener('click', () => openConfirmModal(parseInt(btn.dataset.id)));
+  });
+}
+
+function updateStats() {
+  const total = DATA.length;
+  const confirmed = DATA.filter(d=>getStatus(d)==='Confirmed').length;
+  const delivered = DATA.filter(d=>getStatus(d)==='Delivered').length;
+  const open = DATA.filter(d=>getStatus(d)==='Open').length;
+  const blocked = DATA.filter(d=>getStatus(d)==='Blocked').length;
+  const waiting = DATA.filter(d=>getStatus(d)==='Waiting on Me').length;
+  const pct = total>0 ? Math.round(confirmed/total*100) : 0;
+
+  document.getElementById('s-total').textContent=total;
+  document.getElementById('s-confirmed').textContent=confirmed;
+  document.getElementById('s-delivered').textContent=delivered;
+  document.getElementById('s-open').textContent=open;
+  document.getElementById('s-blocked').textContent=blocked;
+  document.getElementById('s-waiting').textContent=waiting;
+  document.getElementById('fill').style.width=pct+'%';
+  document.getElementById('pct').textContent=pct+'%';
+  document.getElementById('frac').textContent=confirmed+'/'+total;
+}
+
+// ---- Confirm Modal ----
+let pendingConfirmId = null;
+const modal = document.getElementById('confirmModal');
+
+function openConfirmModal(id) {
+  const d = DATA.find(x=>x.id===id);
+  if (!d) return;
+  pendingConfirmId = id;
+  document.getElementById('modalTitle').textContent = 'Confirm: #'+id;
+  document.getElementById('modalSub').textContent = d.request;
+  document.getElementById('modalDate').value = new Date().toISOString().slice(0,10);
+  document.getElementById('modalLocation').value = '';
+  document.getElementById('modalComments').value = '';
+  modal.classList.add('open');
+}
+document.getElementById('modalCancel').addEventListener('click',()=>{modal.classList.remove('open');pendingConfirmId=null;});
+modal.addEventListener('click',e=>{if(e.target===modal){modal.classList.remove('open');pendingConfirmId=null;}});
+document.getElementById('modalSave').addEventListener('click',()=>{
+  if(pendingConfirmId===null) return;
+  confirmations[pendingConfirmId]={
+    dateCompleted:document.getElementById('modalDate').value,
+    finalLocation:document.getElementById('modalLocation').value.trim(),
+    comments:document.getElementById('modalComments').value.trim()
+  };
+  saveConfirmations();
+  modal.classList.remove('open');
+  pendingConfirmId=null;
+  updateStats(); renderKPIs(); render();
+});
+
+// ---- Event listeners ----
+document.querySelectorAll('.filter-btn[data-status]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    if(btn.classList.contains('active')){btn.classList.remove('active');activeStatus=null;}
+    else{document.querySelectorAll('.filter-btn[data-status]').forEach(b=>b.classList.remove('active'));btn.classList.add('active');activeStatus=btn.dataset.status;}
+    render();
+  });
+});
+catFiltersEl.addEventListener('click',e=>{
+  const btn=e.target.closest('.cat-btn');if(!btn)return;
+  catFiltersEl.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');activeCategory=btn.dataset.cat;render();
+});
+document.getElementById('search').addEventListener('input',e=>{searchQuery=e.target.value;render();});
+
+// ---- Export ----
+document.getElementById('exportMd').addEventListener('click',()=>{
+  let md='# Request Tracker\n\n';
+  md+='| # | Request | Category | Channel | Status | Age | Date | Artifact | Notes | Confirmed | Final Location |\n';
+  md+='|---|---------|----------|---------|--------|-----|------|----------|-------|-----------|----------------|\n';
+  DATA.forEach(d=>{
+    const eff=getStatus(d);const note=savedNotes[d.id]!==undefined?savedNotes[d.id]:d.notes;
+    const conf=confirmations[d.id];const days=daysSince(d.date);
+    md+=`| ${d.id} | ${d.request} | ${d.category} | ${d.channel||'—'} | ${eff} | ${days}d | ${d.date} | ${d.artifact||'—'} | ${note||'—'} | ${conf?conf.dateCompleted:'—'} | ${conf&&conf.finalLocation?conf.finalLocation:'—'} |\n`;
+  });
+  md+='\n---\n*Generated '+new Date().toLocaleDateString()+'*\n';
+  const blob=new Blob([md],{type:'text/markdown'});const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='request-tracker.md';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+});
+
+// ---- Init ----
+updateStats(); renderKPIs(); render();
+</script>
+</body></html>
