@@ -54,4 +54,4 @@ shiplog/
 
 ## Credits
 
-Built by [grAIce AI Studios](https://github.com/grAIcetech). MIT License.
+Built by [grAIce Tech](https://github.com/grAIcetech). MIT License.
