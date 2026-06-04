@@ -1,57 +1,70 @@
 # shiplog
 
-[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.0.0-green)](CHANGELOG.md)
-
-**Track every Claude deliverable in one dashboard. No server. No database. Just open the file.**
+Track AI-assisted requests, deliverables, status, and handoffs in one local dashboard.
 
 ![shiplog dashboard](shiplog-dashboard-preview.png)
 
-## Install
+## Who it is for
+
+shiplog is for builders who work across many AI assistant sessions and need a simple way to see what was requested, what shipped, what is still open, and where the output landed.
+
+It is part of grAIce Tech's work on operational clarity, agentic workflows, and practical systems for regulated work.
+
+## Problem it solves
+
+AI-assisted work often scatters across chats, local folders, repos, docs, and screenshots. Within a few days, it becomes hard to reconstruct what happened or decide what needs follow-up.
+
+shiplog gives you a single-file dashboard for that record. No server, database, account, build step, npm package, or framework.
+
+## Quickstart
 
 ```bash
-curl -O https://raw.githubusercontent.com/grAIcetech/shiplog/main/shiplog.html && open shiplog.html
+curl -O https://raw.githubusercontent.com/grAIcetech/shiplog/main/shiplog.html
+open shiplog.html
 ```
 
-## Features
+## Example output
 
-- **Dark-mode dashboard** with stat cards, progress bar, and status filtering
-- **Full-text search** across requests, categories, artifacts, and notes
-- **Editable notes** — click any cell to add context, saved to localStorage
-- **Markdown export** — one-click `.md` export of the full table
-- **Zero dependencies** — no build step, no npm, no framework. One HTML file.
-- **Mobile-friendly** — responsive layout with horizontal scroll on small screens
+The dashboard includes:
 
-## The Problem
+- Status counts and progress summary
+- Search across requests, categories, channels, notes, and artifacts
+- Filters for status and category
+- Editable notes saved to `localStorage`
+- Markdown export
+- A responsive dark-mode table
 
-You work with Claude across dozens of sessions. Scripts in one chat, docs in another, deploy checklists in a third. Within a week you can't remember what shipped, what's still open, or where the output landed.
+## How it works
 
-shiplog is a single HTML file that gives you a command center for all of it. Open it in your browser, edit the data array, and you have a filterable, searchable, exportable dashboard with zero setup.
-
-## How to Customize
-
-Open `shiplog.html` in any text editor and find the `DATA` array (look for `// YOUR DATA`):
+Open `shiplog.html` in any browser. To customize the data, edit the `DATA` array in the file:
 
 ```javascript
 const DATA = [
-  {id:1, request:"Your request", category:"Category", status:"Done", date:"2026-05", artifact:"path/or/url", notes:""},
+  {
+    id: 1,
+    request: "Your request",
+    category: "Category",
+    channel: "Code",
+    status: "Delivered",
+    date: "2026-05-01",
+    artifact: "path/or/url",
+    notes: ""
+  }
 ];
 ```
 
-Categories generate filter buttons automatically. Add a new category string and the button appears.
+Categories generate filter buttons automatically. Status values drive the summary cards and table badges.
 
-## File Structure
+## Status / roadmap
 
-```
-shiplog/
-├── shiplog.html                   ← The dashboard (open in any browser)
-├── shiplog-dashboard-preview.png  ← Preview screenshot
-├── README.md
-├── LICENSE
-├── CHANGELOG.md
-└── .gitignore
-```
+Status: usable single-file dashboard.
 
-## Credits
+Planned cleanup:
 
-Built by [grAIce Tech](https://github.com/grAIcetech). MIT License.
+- Keep the file dependency-free.
+- Improve starter data and examples.
+- Add clearer guidance for maintaining a team or project-level shiplog.
+
+## License
+
+MIT. Built by [grAIce Tech](https://github.com/grAIcetech).
